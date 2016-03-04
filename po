@@ -48,9 +48,10 @@ do
     f)fixLimit=$OPTARG;;
     i)execFlag=0
       case $OPTARG in
-        [Dd][Oo][Ss]*)echo "to take a calculation of DOS";execFlag=2;;        
-        [Ss][Tt][Mm]*)echo "to take a calculation of STM";execFlag=3;;
-        [Ss][Cc]*)echo "to take a static calculation ";execFlag=4;;
+        [Dd][Oo][Ss]*)echo "take a calculation of DOS";execFlag=2;;        
+        [Ss][Tt][Mm]*)echo "take a calculation of STM";execFlag=3;;
+        [Ss][Cc]*)echo "take a static calculation ";execFlag=4;;
+        [Bb][Ss][Kk][Aa][Nn]*)echo "take a bSKAN calculation";execFlag=5
       esac;;
     x)execFlag=11;;
     u)ldapuFlag=1
@@ -148,7 +149,10 @@ case $execFlag in
     echo >> sc/INCAR
     ;;
 
+  #5 for bSKAN input files calculation
+  5)
 
+  
   #11 for generate .xyz from OUT.ANI
   11)file_name=`basename $PWD`
      atom_nums=`head -1 OUT.ANI|sed 's/ *//g'`

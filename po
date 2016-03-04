@@ -5,12 +5,6 @@
   ##                                                                    ##
   ##  made by aVrise, at 07/07/2015                                     ## 
   ##                                                                    ##
-  ##  convert *.cif --> POSCAR + INCAR, KPOINTS, POTCAR, submit_script  ##
-  ##                                                                    ##
-  ##  version 1.022                                                     ##
-  ##                                                                    ##
-  ##  manual and new features are at the end of this file               ##
-  ##                                                                    ##
   ##  have a good time                                                  ##
   ##                                                                    ##
   ##                                                                    ##
@@ -263,62 +257,3 @@ EOF
     ;;
 
 esac
-
-########################################################################################################################################
-#                                                                                                                                      #
-#         NN      N   EEEEEEE   W      W         FFFFFFF   EEEEEEE      AA      TTTTTTTTT   U       U   RRRRR      EEEEEEE   SSSSSS    #
-#        N N     N   E         W      W         F         E           A   A        T       U       U   R     R    E         S     S    #
-#       N  N    N   E         W  W   W         F         E          A     A       T       U       U   R     R    E         S           #
-#      N   N   N   EEEEEE    W  W   W         FFFFFF    EEEEEE     AAAAAAAA      T       U       U   RRRRRR     EEEEEE      SSSS       #
-#     N    N  N   E         W  W   W         F         E          A      A      T       U       U   R  R       E                S      #
-#    N     N N   E         W  W   W         F         E          A      A      T       U       U   R    R     E         S      S       #
-#   N      NN   EEEEEEEE  WWW  WW          F         EEEEEEEE   A      A      T         UUUUUU    R      R   EEEEEEEE    SSSSSS        #
-#                                                                                                                                      #
-########################################################################################################################################
-########################################################################################################################################
-#                                                                                                                                      #
-#    version 1.010 at 07/13/2015                                                                                                       #
-#                                                                                                                                      #
-#    1. use "getopts" to manage arguments, for more probabilities                                                                      #
-#    2. for dev, introduct "execFlag" to control the script                                                                            #
-#    3. add the manual to this script                                                                                                  #
-#    4. add the option -r -s -d -p -f -h                                                                                               #
-#                                                                                                                                      #
-#                                                                                                                                      #
-#    version 1.011 at 07/27/2015                                                                                                       #
-#                                                                                                                                      #
-#    1. modify the method of copying INCAR file, delete -s,-d, add -i                                                                  # 
-#    2. use other execFlags to execuate different calculational type                                                                   #
-#                                                                                                                                      #
-#                                                                                                                                      #
-#    version 1.012 at 07/28/2015                                                                                                       #
-#                                                                                                                                      #
-#    1. catch bugs                                                                                                                     #
-#    2. even though this is not a release one, but i like it                                                                           #
-#    3. add -e -j to initialize the $HOME/res/incar and submit jobs in subordinate directory                                           #
-#    4. add -c -x to checkjob and convert the OUT.ANI to .xyz                                                                          #
-#    5. add -u action to take a LDA+U performance in calculation                                                                       #
-#                                                                                                                                      #
-#                                                                                                                                      #
-#    version 1.020 at 07/28/2015                                                                                                       #
-#                                                                                                                                      #
-#    1. i think the ver1.012 one has many big changes, so i level it up!                                                               #
-#                                                                                                                                      #
-#                                                                                                                                      #
-#    version 1.021 at 07/29/2015                                                                                                       #
-#                                                                                                                                      #
-#    1. change the sc incar type                                                                                                       #
-#    2. alter the -u option field-separator from "_" to "-"                                                                            #
-#    3. make U value print out on the screen                                                                                           #
-#                                                                                                                                      #
-#                                                                                                                                      #
-#    version 1.022 at 09/05/2015
-# 
-#    1. deal with a few bugs of LDA+U                                                                    
-#
-#
-#
-#
-#
-#
-#

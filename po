@@ -143,6 +143,7 @@ case $execFlag in
     fi
     mkdir sc
     cp * sc/
+    cp CONTCAR sc/POSCAR
     sed -i " s/NSW/#NSW/ ; s/ISIF/#ISIF/ ; s/IBRION/#IBRION/ ; s/POTIM/#POTIM/ ; s/LCHARG/#LCHARG/ ; s/LWAVE/#LWAVE/" sc/INCAR
     echo >> sc/INCAR
     ;;
@@ -243,7 +244,7 @@ case $execFlag in
                                                                                                                                                                
     -x --xyz, to generate .xyz file from the OUT.ANI                                                                                                         
  
-    -u [num-num...], --LDA+U [U value], plus U value by "0*1*2*3*4..." based on the alphybet sequence of elements, the default J value is 0.5, the member of U values is at most 10.
+    -u [num*num*...], --LDA+U [U value], plus U value by "0*1*2*3*4..." based on the alphybet sequence of elements, the default J value is 0.5, the member of U values is at most 10.
  
     -r --remove, to remove useless files like CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66, and it won't generate files.
                                                                                                                                                       

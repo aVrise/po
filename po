@@ -150,7 +150,20 @@ case $execFlag in
     ;;
 
   #5 for bSKAN input files calculation
-  5)
+  5)if [ -d "stm_bskan" ] ;then 
+      mv stm_bskan stm_bskan.backup$DATE
+    fi
+    mkdir stm_bskan
+    cp * stm_bskan/
+    z_axis=`sed -n "4p" POSCAR | awk '{print $3}'`
+    stm1=
+    stm2=
+    stm3=0.05218
+    stm4=
+    stm5=2
+    stm6=2
+    echo "STM=$stm1 $stm2 $stm3 $stm4 $stm5 $stm6" >> stm_bskan/INCAR
+    ;;
 
   
   #11 for generate .xyz from OUT.ANI

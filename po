@@ -27,14 +27,22 @@
 
 #set default
 
-fixLimit=-99
 potDir=`grep -m 1 PBE2010 ~/res/potDir `
-DATE=`date +-%Y-%m-%d-%H%M`
-execFlag=1
 vaspScript="qsub.sh"
 
+
 #initializtion
-atom_num=`
+
+execFlag=1
+DATE=`date +-%Y-%m-%d-%H%M`
+fixLimit=-99                            # a relative infinitesimal var
+if [ -f OUTCAR　] ;then                 #get number of ions from OUTCAR
+  atom_num=$(sed -n "s/[^\n]*NIONS = *//p" OUTCAR) 
+  atom_num_plus_1=$(($atom_num+1))
+  atom_num_plus_2=$(($atom_num+2))
+  atom_num_minus_1=$(($atom_num-1))
+  atom_num_minus_2=$(($atom_num-2))
+fi
 
 
 #take arguments
@@ -55,7 +63,8 @@ do
         [Dd][Oo][Ss]*)echo "take a calculation of DOS";execFlag=2;;        
         [Ss][Tt][Mm]*)echo "take a calculation of STM";execFlag=3;;
         [Ss][Cc]*)echo "take a static calculation ";execFlag=4;;
-        [Bb][Ss][Kk][Aa][Nn]*)echo "take a bSKAN calculation";execFlag=5
+        [Nn][Ss][Tt][Mm]*)echo "take a pre-bSKAN calculation";execFlag=5;;
+        [Bb][Ss][Kk][Aa][Nn]*)echo "take a bSKAN calcuation";execFlag=6;;
       esac;;
     x)execFlag=11;;
     u)ldapuFlag=1
@@ -160,15 +169,17 @@ case $execFlag in
     mkdir stm_bskan
     cp * stm_bskan/
     z_axis=`sed -n "4p" POSCAR | awk '{print $3}'`
-    stm1=$(`)
-    stm2=
-    stm3=0.05218
+    stm1=$(echo "$(grep -A$atom_num_plus_1 POSITION OUTCAR | tail -$atom_num | awk '{print $3}' | sort -n | tail -1) + 0.5" | bc )
+    stm2=$(echo "$stm1 + 5.2918" | bc)
+    stm3=0.059218
     stm4=-50
     stm5=2
     stm6=2
     echo "STM=$stm1 $stm2 $stm3 $stm4 $stm5 $stm6" >> stm_bskan/INCAR
     ;;
 
+  #6 for bSKAN calcultion
+  6)
   
   #11 for generate .xyz from OUT.ANI
   11)file_name=`basename $PWD`

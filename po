@@ -37,7 +37,7 @@ execFlag=1
 DATE=`date +-%Y-%m-%d-%H%M`
 fixLimit=-99                            # a relative infinitesimal var
 if [ -f OUTCAR　] ;then                 #get number of ions from OUTCAR
-  atom_num=$(sed -n "s/[^\n]*NIONS = *//p" OUTCAR) 
+  atom_num=$(sed -n "s/[^\n]*NIONS = *//p" OUTCAR)
   atom_num_plus_1=$(($atom_num+1))
   atom_num_plus_2=$(($atom_num+2))
   atom_num_minus_1=$(($atom_num-1))
@@ -60,7 +60,7 @@ do
     f)fixLimit=$OPTARG;;
     i)execFlag=0
       case $OPTARG in
-        [Dd][Oo][Ss]*)echo "take a calculation of DOS";execFlag=2;;        
+        [Dd][Oo][Ss]*)echo "take a calculation of DOS";execFlag=2;;
         [Ss][Tt][Mm]*)echo "take a calculation of STM";execFlag=3;;
         [Ss][Cc]*)echo "take a static calculation ";execFlag=4;;
         [Nn][Ss][Tt][Mm]*)echo "take a pre-bSKAN calculation";execFlag=5;;
@@ -80,7 +80,7 @@ done
 ################################################################################################################
 
 
-case $execFlag in 
+case $execFlag in
 
 
   #0 for non-vaspfiles operation
@@ -109,7 +109,7 @@ case $execFlag in
      grep Uiso *.cif|grep -w $i|sort -nk 5|awk '{ if($5>"'"$fixLimit"'") printf "%12.8s%12.8s%12.8s   T   T   T\n", $3,$4,$5 ;else printf "%12.8s%12.8s%12.8s   F   F   F\n",$3,$4,$5}' >> POSCAR
     done
     head -7 POSCAR
-    if [ $ldapuFlag ] ;then #LDA+U 
+    if [ $ldapuFlag ] ;then #LDA+U
       echo $ldapuvalue | awk -F '*' '{b[$1]=b[$2]=b[$3]=b[$4]=b[$5]=b[$6]=b[$7]=b[$8]=b[$9]=b[$10]=0.5;b[0]=0;b[$20]=" ";printf "%6s%6s%6s%6s%6s%6s%6s%6s%6s%6s LDA+U\n",$1-b[$1],$2-b[$2],$3-b[$3],$4-b[$4],$5-b[$5],$6-b[$6],$7-b[$7],$8-b[$8],$9-b[$9],$10-b[$10]}'
     fi
 
@@ -122,16 +122,16 @@ case $execFlag in
     #
     cp ~/res/KPOINTS KPOINTS
     sed "s/JOB_NAME/$JOB_NAME/" ~/res/incar > INCAR
-    if [ $ldapuFlag ] ;then #LDA+U 
+    if [ $ldapuFlag ] ;then #LDA+U
       echo $ldapuvalue | awk -F '*' '{a[$1]=a[$2]=a[$3]=a[$4]=a[$5]=a[$6]=a[$7]=a[$8]=a[$9]=a[$10]=2;b[$1]=b[$2]=b[$3]=b[$4]=b[$5]=b[$6]=b[$7]=b[$8]=b[$9]=b[$10]=0.5;b[0]=0;a[0]=-1;b[$20]=a[$20]=" ";printf "\nLDAU=.TRUE.\nLDAUTYPE=2\nLDAUL=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\nLDAUU=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\nLDAUJ=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\n",a[$1],a[$2],a[$3],a[$4],a[$5],a[$6],a[$7],a[$8],a[$9],a[$10],$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,b[$1],b[$2],b[$3],b[$4],b[$5],b[$6],b[$7],b[$8],b[$9],b[$10]}' >> INCAR
     fi
-    sed "s/JOB_NAME/$JOB_NAME/" ~/res/$vaspScript > zlauncher        
+    sed "s/JOB_NAME/$JOB_NAME/" ~/res/$vaspScript > zlauncher
     printf "\033[31mDON'T FORGET \033[34mINCAR, KPOINTS, CORES\033[0m\n"
     ;;
 
   #2 for create dos directory
-  2)if [ -d "dos" ] ;then 
-      mv dos dos.backup$DATE 
+  2)if [ -d "dos" ] ;then
+      mv dos dos.backup$DATE
     fi
     mkdir dos
     cp * dos/
@@ -152,7 +152,7 @@ case $execFlag in
 
 
   #4 for create static calculation directory
-  4)if [ -d "sc" ] ;then 
+  4)if [ -d "sc" ] ;then
       mv sc sc.backup$DATE
     fi
     mkdir sc
@@ -163,7 +163,7 @@ case $execFlag in
     ;;
 
   #5 for bSKAN input files calculation
-  5)if [ -d "stm_bskan" ] ;then 
+  5)if [ -d "stm_bskan" ] ;then
       mv stm_bskan stm_bskan.backup$DATE
     fi
     mkdir stm_bskan
@@ -180,7 +180,7 @@ case $execFlag in
 
   #6 for bSKAN calcultion
   6)
-  
+
   #11 for generate .xyz from OUT.ANI
   11)file_name=`basename $PWD`
      atom_nums=`head -1 OUT.ANI|sed 's/ *//g'`
@@ -190,7 +190,7 @@ case $execFlag in
 
 
   #21 for check jobs based on names of directory, only for $HOME/LOG existing
-  21)grep $dirName $HOME/LOG |tail 
+  21)grep $dirName $HOME/LOG |tail
      ;;
 
 
@@ -209,82 +209,82 @@ case $execFlag in
 
   #23 for submit jobs. type your submit jobs commands replacing "sh zlauncher"
   23)for i in $(ls -p|grep "/"|grep -v backup)
-       do cd $i 
-       if [ -f zlauncher ] ;then 
-         sh zlauncher 
+       do cd $i
+       if [ -f zlauncher ] ;then
+         sh zlauncher
        else
          echo "there isn't the zlauncher in $PWD "
        fi
-       cd .. 
+       cd ..
      done
-     ;;       
+     ;;
 
-  
+
   #24 for remove useless files
   24)rm -f CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66
      ;;
 
 
 
-  #99 for manual 
+  #99 for manual
   99) cat <<EOF
-                                                                                                                                                               
- 
 
 
-                                                                                                                                          
-                     MMMMM           MMMMM              AAAAA     NNNN          NN     UU             UU              AAAAA     LL                 
-                    MM  MM          MM  MM             AA  AA     NN NN         NN     UU             UU             AA  AA     LL                 
-                   MM   MM         MM   MM            AA   AA     NN  NN        NN     UU             UU            AA   AA     LL                 
-                  MM    MM        MM    MM           AA    AA     NN   NN       NN     UU             UU           AA    AA     LL                 
-                 MM     MM       MM     MM          AA     AA     NN    NN      NN     UU             UU          AA     AA     LL                 
-                MM      MM      MM      MM         AA      AA     NN     NN     NN     UU             UU         AA      AA     LL                 
-               MM       MM     MM       MM        AA       AA     NN      NN    NN     UU             UU        AA       AA     LL                 
-              MM        MM    MM        MM       AAAAAAAAAAAA     NN       NN   NN     UU             UU       AAAAAAAAAAAA     LL                 
-             MM         MM   MM         MM      AA         AA     NN        NN  NN     UU             UU      AA         AA     LL                 
-            MM          MM  MM          MM     AA          AA     NN         NN NN     UU             UU     AA          AA     LL                 
-           MM           MM MM           MM    AA           AA     NN          NNNN       UU         UU      AA           AA     LL                 
-          MM            MMMM            MM   AA            AA     NN           NNN         UUUUUUUUU       AA            AA     LLLLLLLLLLLLLLLLL                 
-                                                                                                                                                               
-                                                                                                                                                               
-                                                                         po                                                                                    
-                                                                                                                                                               
-    po is a script that can automatically generate the inputfiles for VASP from a .cif file                                                                    
-                                                                                                                                                               
-    po -h -I -x -u -r                                                                 
-       -f [num] -p [pot]  -c [name] -i [dos] [stm] [sc]                                                                                                
-                                                                                                                                                               
-    DEFAULT                                                                                                                                                    
-                                                                                                                                                               
-    the default set is to generate the inputfiles with a relax calculation, and all atoms unfixed. the PBE2010 potcar is also used.                            
-                                                                                                                                                               
-    !!CAUTION!!                                                                                                                                                
-                                                                                                                                                               
-    there must be incar, KPOINTS, vasp.script, potDir(with potcar directory in it, take /home/apps/pot/paw_pbe2010 for example) in the $HOME/res, or "po" can just generate POSCAR.                                                                                                                 
-                                                                                                                                                               
+
+
+
+                     MMMMM           MMMMM              AAAAA     NNNN          NN     UU             UU              AAAAA     LL
+                    MM  MM          MM  MM             AA  AA     NN NN         NN     UU             UU             AA  AA     LL
+                   MM   MM         MM   MM            AA   AA     NN  NN        NN     UU             UU            AA   AA     LL
+                  MM    MM        MM    MM           AA    AA     NN   NN       NN     UU             UU           AA    AA     LL
+                 MM     MM       MM     MM          AA     AA     NN    NN      NN     UU             UU          AA     AA     LL
+                MM      MM      MM      MM         AA      AA     NN     NN     NN     UU             UU         AA      AA     LL
+               MM       MM     MM       MM        AA       AA     NN      NN    NN     UU             UU        AA       AA     LL
+              MM        MM    MM        MM       AAAAAAAAAAAA     NN       NN   NN     UU             UU       AAAAAAAAAAAA     LL
+             MM         MM   MM         MM      AA         AA     NN        NN  NN     UU             UU      AA         AA     LL
+            MM          MM  MM          MM     AA          AA     NN         NN NN     UU             UU     AA          AA     LL
+           MM           MM MM           MM    AA           AA     NN          NNNN       UU         UU      AA           AA     LL
+          MM            MMMM            MM   AA            AA     NN           NNN         UUUUUUUUU       AA            AA     LLLLLLLLLLLLLLLLL
+
+
+                                                                         po
+
+    po is a script that can automatically generate the inputfiles for VASP from a .cif file
+
+    po -h -I -x -u -r
+       -f [num] -p [pot]  -c [name] -i [dos] [stm] [sc]
+
+    DEFAULT
+
+    the default set is to generate the inputfiles with a relax calculation, and all atoms unfixed. the PBE2010 potcar is also used.
+
+    !!CAUTION!!
+
+    there must be incar, KPOINTS, vasp.script, potDir(with potcar directory in it, take /home/apps/pot/paw_pbe2010 for example) in the $HOME/res, or "po" can just generate POSCAR.
+
     INTRODUCTION                                                                                                                                               
-                                                                                                                                                               
-    -h --help, to print out the manual                                                                                                                         
-                                                                                                                                                               
-    -I --INCAR initialization, to reset INCAR in $HOME/res                                                                                                     
-                                                                                                                                                               
+
+    -h --help, to print out the manual
+
+    -I --INCAR initialization, to reset INCAR in $HOME/res
+
     -i [dos], [stm], [sc] --INCAR selection [calculation type], to generate different kinds of INCAR file
 
     -j --submit jobs, to submit jobs in the sub-directories
-                                                                                                                                                               
-    -c [name], --checkjob [directory name], to check your recently finished jobs if the LOG file exists in the $HOME/                                          
-                                                                                                                                                               
-    -x --xyz, to generate .xyz file from the OUT.ANI                                                                                                         
- 
+
+    -c [name], --checkjob [directory name], to check your recently finished jobs if the LOG file exists in the $HOME/
+
+    -x --xyz, to generate .xyz file from the OUT.ANI
+
     -u [num*num*...], --LDA+U [U value], plus U value by "0*1*2*3*4..." based on the alphybet sequence of elements, the default J value is 0.5, the member of U values is at most 10.
- 
+
     -r --remove, to remove useless files like CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66, and it won't generate files.
-                                                                                                                                                      
-    -f [num] --fix [coordinates number], to fix the atoms under the coordinates number.                                                                        
-                                                                                                                                                               
-    -p [pot] --potcar [POTCAR type], to choose which POTCAR will be used in the calculation in the future. make sure the directory of which one you choose exists in the $HOME/res/potDir                                                                                                                               
-                                                                                                                                                               
-                                                                                                                                                               
+
+    -f [num] --fix [coordinates number], to fix the atoms under the coordinates number.
+
+    -p [pot] --potcar [POTCAR type], to choose which POTCAR will be used in the calculation in the future. make sure the directory of which one you choose exists in the $HOME/res/potDir
+
+
 EOF
   ;;
 

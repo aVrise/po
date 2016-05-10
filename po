@@ -262,7 +262,7 @@ case $execFlag in
 
     there must be incar, KPOINTS, vasp.script, potDir(with potcar directory in it, take /home/apps/pot/paw_pbe2010 for example) in the $HOME/res, or "po" can just generate POSCAR.
 
-    INTRODUCTION                                                                                                                                               
+    INTRODUCTION
 
     -h --help, to print out the manual
 

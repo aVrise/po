@@ -40,5 +40,7 @@ while [ $i -le $nspin ] ; do
    j=1
 done
 
-awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' PROCARtip.pro > PROCARtip
-rm *.pro
+echo > PROCARtip
+echo $nkpts $nbands $nspin >> PROCARtip
+awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' PROCARtip.pro >> PROCARtip
+rm -f PROCARtip.pro _ion.pro _band.pro _kpo.pro

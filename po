@@ -27,12 +27,13 @@
 
 #set default
 
-potDir=`grep -m 1 PBE2010 ~/res/potDir `
+potDir=`grep -m 1 PBE2010 ~/res/potDir`
 vaspScript="qsub.sh"
 
 
 #initializtion
 
+JOB_NAME=`sed -n '1s/data_\(\S*\)/\1/p' *.cif`
 execFlag=1
 DATE=`date +-%Y-%m-%d-%H%M`
 fixLimit=-99                            # a relative infinitesimal var
@@ -47,25 +48,30 @@ fi
 
 #take arguments
 
-while getopts :hIjrxc:f:i:p:u: flags
+while getopts :hIjrxc:f:i:p:u:b: flags
 do
   case $flags in
 
+    b)execFlag=0 #operations for bSKAN files
+      case $OPTARG in
+        [Pp]2[Mm])execFlag=50;;
+        [Pp][Rr][Oo]*)execFlag=51;;
+      esac;;
     c)dirName=$OPTARG;execFlag=21;;
+    f)fixLimit=$OPTARG;;
     h)execFlag=99;;
     I)execFlag=22;;
-    j)execFlag=23;;
-    r)execFlag=24;;
-    p)potDir=`grep -m 1 $OPTARG ~/res/potDir`;;
-    f)fixLimit=$OPTARG;;
     i)execFlag=0
       case $OPTARG in
         [Dd][Oo][Ss]*)echo "take a calculation of DOS";execFlag=2;;
         [Ss][Tt][Mm]*)echo "take a calculation of STM";execFlag=3;;
         [Ss][Cc]*)echo "take a static calculation ";execFlag=4;;
-        [Nn][Ss][Tt][Mm]*)echo "take a pre-bSKAN calculation";execFlag=5;;
+        [Bb][Ss][Tt][Mm]*)echo "take a pre-bSKAN calculation";execFlag=5;;
         [Bb][Ss][Kk][Aa][Nn]*)echo "take a bSKAN calcuation";execFlag=6;;
       esac;;
+    j)execFlag=23;;
+    r)execFlag=24;;
+    p)potDir=`grep -m 1 $OPTARG ~/res/potDir`;;
     x)execFlag=11;;
     u)ldapuFlag=1
       ldapuvalue=$OPTARG;;
@@ -88,11 +94,10 @@ case $execFlag in
     ;;
 
 
-  #1 for generate vasp input files
+  #1 to generate vasp input files
   1)
     if [ -f *.cif ] ;then
       dos2unix *.cif
-      JOB_NAME=`sed -n '1s/data_\(\S*\)/\1/p' *.cif`
     else
       echo ".cif files don't exist!!!"
       exit
@@ -129,7 +134,7 @@ case $execFlag in
     printf "\033[31mDON'T FORGET \033[34mINCAR, KPOINTS, CORES\033[0m\n"
     ;;
 
-  #2 for create dos directory
+  #2 to create dos directory
   2)if [ -d "dos" ] ;then
       mv dos dos.backup$DATE
     fi
@@ -140,7 +145,7 @@ case $execFlag in
     ;;
 
 
-  #3 for create stm directory
+  #3 to create stm directory
   3)if [ -d "stm" ] ;then
       mv stm stm.backup$DATE
     fi
@@ -151,7 +156,7 @@ case $execFlag in
     ;;
 
 
-  #4 for create static calculation directory
+  #4 to create static calculation directory
   4)if [ -d "sc" ] ;then
       mv sc sc.backup$DATE
     fi
@@ -172,29 +177,37 @@ case $execFlag in
     stm1=$(echo "$(grep -A$atom_num_plus_1 POSITION OUTCAR | tail -$atom_num | awk '{print $3}' | sort -n | tail -1) + 0.5" | bc )
     stm2=$(echo "$stm1 + 5.2918" | bc)
     stm3=0.059218
-    stm4=-50
-    stm5=2
-    stm6=2
+    stm4=-100
+    stm5=5
+    stm6=5
     echo "STM=$stm1 $stm2 $stm3 $stm4 $stm5 $stm6" >> stm_bskan/INCAR
     ;;
 
   #6 for bSKAN calcultion
-  6)
+  6)if [ -d "bskan" ]; then
+      mv bskan bskan.backup$DATE
+    fi
+    mkdir bskan
+    ln -sf ../STM bskan/WAVSAMPLE
+    ln -sf ../CONTCAR bskan/ASAMPLE
+    ln -sf ~/res/WAVTIP bskan/WAVTIP
+    ln -sf ~/res/ATIP bskan/ATIP
+    cp ~/res/PROCARtip ~/res/INSCAN ~/zlauncher bskan/
+    sed -i 's/vasp/bskan_chen/' bskan/zlauncher
 
-  #11 for generate .xyz from OUT.ANI
-  11)file_name=`basename $PWD`
-     atom_nums=`head -1 OUT.ANI|sed 's/ *//g'`
+  #11 to generate .xyz from OUT.ANI
+  11)atom_nums=`head -1 OUT.ANI|sed 's/ *//g'`
      tail_nums=`expr $atom_nums + 2`
-     tail -$tail_nums OUT.ANI|sed '2s/[^~]*//' > $file_name.xyz
+     tail -$tail_nums OUT.ANI|sed '2s/[^~]*//' > $JOBNAME.xyz
      ;;
 
 
-  #21 for check jobs based on names of directory, only for $HOME/LOG existing
+  #21 to check jobs based on names of directory, only for $HOME/LOG existing
   21)grep $dirName $HOME/LOG |tail
      ;;
 
 
-  #22 for initialize the incar file
+  #22 to initialize the incar file
   22)if [ -d $HOME/res ] ;then
        if [ -f $HOME/res/incar ] ;then
           rm -r $HOME/res/incar
@@ -207,7 +220,7 @@ case $execFlag in
      ;;
 
 
-  #23 for submit jobs. type your submit jobs commands replacing "sh zlauncher"
+  #23 to submiting jobs. type your submit jobs commands replacing "sh zlauncher"
   23)for i in $(ls -p|grep "/"|grep -v backup)
        do cd $i
        if [ -f zlauncher ] ;then
@@ -220,8 +233,61 @@ case $execFlag in
      ;;
 
 
-  #24 for remove useless files
+  #24 to remove useless files
   24)rm -f CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66
+     ;;
+
+
+  #50 to transfer PLOTCON to corresponding martrix
+  50)  awk '{if ( NF == 0  ) printf "\n";else if ( NF == 3 ) printf "%s ",$3}' PLOTCON > m_$JOBNAME
+     ;;
+
+
+  #51 to transfer PROCAR of vasp to PROCARtip of bSKAN
+  51)
+  if [ -f PROCARtip ]; then
+     rm -f PROCARtip
+  fi
+
+  File='PROCAR'
+
+  nspin=$(grep ISPIN INCAR | sed 's/ //g' | sed 's/[^0-9]//g')
+  nkpts=$(sed -n '2s/:/#/pg' $File | awk  '{print $4}')
+  nbands=$(sed -n '2s/:/#/pg' $File | awk  '{print $8}')
+#  nions=$(sed -n '2s/:/#/pg' $File | awk  '{print $12}')
+  grep -w k-point $File | awk '{print $1,$2,$4,$5,$6,$9}' > _kpo.pro
+  grep -w band $File | awk '{print $3,$2,$5,$8}' > _band.pro
+  grep -w $atom_num $File | grep -v band > _ion.pro
+  i=1
+  j=1
+  k=1
+
+  while [ $i -le $nspin ] ; do
+     i=$(($i+1))
+     while [ $j -le $nkpts ] ; do
+        j=$(($j+1))
+        echo >> PROCARtip.pro
+        sed -n '1p' _kpo.pro >> PROCARtip.pro
+        sed -i '1d' _kpo.pro
+        while [ $k -le $nbands ] ; do
+           k=$(($k+1))
+           echo >> PROCARtip.pro
+           sed -n '1p' _band.pro >> PROCARtip.pro
+           sed -i '1d' _band.pro
+           echo >> PROCARtip.pro
+           echo "ion      s     py     pz     px    dxy    dyz    dz2    dxz    dx2    tot" >> PROCARtip.pro
+           sed -n '1,3p' _ion.pro >> PROCARtip.pro
+           sed -i '1,3d' _ion.pro
+        done
+        k=1
+     done
+     j=1
+  done
+
+  echo > PROCARtip
+  echo $nkpts $nbands $nspin >> PROCARtip
+  awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' PROCARtip.pro >> PROCARtip
+  rm -f PROCARtip.pro _ion.pro _band.pro _kpo.pro
      ;;
 
 

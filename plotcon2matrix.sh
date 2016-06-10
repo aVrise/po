@@ -1,5 +1,3 @@
- awk '{if ( NF == 0  ) printf "\n";else if ( NF == 3 ) printf "%s ",$3}' $FileName
-
  #!/bin/bash
 
  if [ -d 5 6 7 8 9 10 ]; then

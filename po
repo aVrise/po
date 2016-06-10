@@ -37,7 +37,7 @@ JOB_NAME=`sed -n '1s/data_\(\S*\)/\1/p' *.cif`
 execFlag=1
 DATE=`date +-%Y-%m-%d-%H%M`
 fixLimit=-99                            # a relative infinitesimal var
-if [ -f OUTCAR　] ;then                 #get number of ions from OUTCAR
+if [ -f OUTCAR ]; then                 #get number of ions from OUTCAR
   atom_num=$(sed -n "s/[^\n]*NIONS = *//p" OUTCAR)
   atom_num_plus_1=$(($atom_num+1))
   atom_num_plus_2=$(($atom_num+2))
@@ -106,12 +106,12 @@ case $execFlag in
     #generate POSCAR from .cif file
     echo $JOB_NAME > POSCAR
     sed -n '10,15p' *.cif|awk '{printf " %s", $2}'|awk '{pie=3.1415926/180; printf "%.6f\n%12.6f%12.6f%12.6f\n%12.6f%12.6f%12.6f\n%12.6f%12.6f%12.6f\n",1,$1,0,0,$2*cos(pie*$6),$2*sin(pie*$6),0,$3*cos(pie*$5),$3*(cos(pie*$4)-cos(pie*$6)*cos(pie*$5))/sin(pie*$6), $3*sqrt((cos(pie*$5-pie*$6)-cos(pie*$4))*(cos(pie*$4)-cos(pie*$5+pie*$6))/sin(pie*$6)^2)}' >> POSCAR
-    grep Uiso *.cif|awk '{printf "%s\n",$2}'|sort|uniq -c|awk '{printf "%6s",$2}' >> POSCAR
+    grep U[ia][sn][oi] *.cif|awk '{printf "%s\n",$2}'|sort|uniq -c|awk '{printf "%6s",$2}' >> POSCAR
     echo >> POSCAR
-    grep Uiso *.cif|awk '{printf "%s\n",$2}'|sort|uniq -c|awk '{printf "%6s",$1}' >> POSCAR
+    grep U[ia][sn][oi] *.cif|awk '{printf "%s\n",$2}'|sort|uniq -c|awk '{printf "%6s",$1}' >> POSCAR
     printf "\nSelective\nDirect\n" >> POSCAR
     for i in `grep Uiso *.cif|awk '{printf "%s\n",$2}'|sort -u` ;do
-     grep Uiso *.cif|grep -w $i|sort -nk 5|awk '{ if($5>"'"$fixLimit"'") printf "%12.8s%12.8s%12.8s   T   T   T\n", $3,$4,$5 ;else printf "%12.8s%12.8s%12.8s   F   F   F\n",$3,$4,$5}' >> POSCAR
+      grep U[ia][sn][oi] *.cif|grep -w $i|sort -nk 5|awk '{ if($5>"'"$fixLimit"'") printf "%12.8s%12.8s%12.8s   T   T   T\n", $3,$4,$5 ;else printf "%12.8s%12.8s%12.8s   F   F   F\n",$3,$4,$5}' >> POSCAR
     done
     head -7 POSCAR
     if [ $ldapuFlag ] ;then #LDA+U
@@ -135,29 +135,31 @@ case $execFlag in
     ;;
 
   #2 to create dos directory
-  2)if [ -d "dos" ] ;then
+  2)if [ -d dos ] ;then
       mv dos dos.backup$DATE
     fi
     mkdir dos
-    cp * dos/
+    cp `ls | grep -v WAVECAR` dos/
+    ln -sf ../WAVECAR dos/
     sed -i "s/ISTART[^\n]*/ISTART=1/  " dos/INCAR
     printf "\nICHARG=11\nLORBIT=10\n#EMIN=-10\n#EMAX=9\n#NBANDS=522\nNEDOS=2000\n\n" >> dos/INCAR
     ;;
 
 
   #3 to create stm directory
-  3)if [ -d "stm" ] ;then
+  3)if [ -d stm ] ;then
       mv stm stm.backup$DATE
     fi
     mkdir stm
-    cp * stm/
+    cp `ls | grep -v WAVECAR` stm/
+    ln -sf ../WAVECAR stm/
     sed -i " s/ISTART[^\n]*/ISTART=1/ "  stm/INCAR
     printf "\nLPARD=.TRUE.\nNBMOD=-3;EINT=-0.1\nLSEPB=.FALSE.;LSEPK=.FALSE\n\n" >> stm/INCAR
     ;;
 
 
   #4 to create static calculation directory
-  4)if [ -d "sc" ] ;then
+  4)if [ -d sc ] ;then
       mv sc sc.backup$DATE
     fi
     mkdir sc
@@ -168,11 +170,12 @@ case $execFlag in
     ;;
 
   #5 for bSKAN input files calculation
-  5)if [ -d "stm_bskan" ] ;then
+  5)if [ -d stm_bskan ] ;then
       mv stm_bskan stm_bskan.backup$DATE
     fi
     mkdir stm_bskan
-    cp * stm_bskan/
+    cp `ls | grep -v WAVECAR` stm_bskan/
+    ln -sf ../WAVECAR stm_bskan/
     z_axis=`sed -n "4p" POSCAR | awk '{print $3}'`
     stm1=$(echo "$(grep -A$atom_num_plus_1 POSITION OUTCAR | tail -$atom_num | awk '{print $3}' | sort -n | tail -1) + 0.5" | bc )
     stm2=$(echo "$stm1 + 5.2918" | bc)
@@ -184,7 +187,7 @@ case $execFlag in
     ;;
 
   #6 for bSKAN calcultion
-  6)if [ -d "bskan" ]; then
+  6)if [ -d bskan ]; then
       mv bskan bskan.backup$DATE
     fi
     mkdir bskan
@@ -192,8 +195,9 @@ case $execFlag in
     ln -sf ../CONTCAR bskan/ASAMPLE
     ln -sf ~/res/WAVTIP bskan/WAVTIP
     ln -sf ~/res/ATIP bskan/ATIP
-    cp ~/res/PROCARtip ~/res/INSCAN ~/zlauncher bskan/
+    cp ~/res/PROCARtip ~/res/INSCAN ~/res/zlauncher bskan/
     sed -i 's/vasp/bskan_chen/' bskan/zlauncher
+    ;;
 
   #11 to generate .xyz from OUT.ANI
   11)atom_nums=`head -1 OUT.ANI|sed 's/ *//g'`

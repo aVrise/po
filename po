@@ -28,27 +28,78 @@
 #set default
 
 potDir=`grep -m 1 PBE2010 ~/res/potDir`
-vaspScript="qsub.sh"
+VaspScript="qsub.sh"
+
+#functions
+
+function errorText(){
+  printf "\033[031mERROR: \033[0m"
+  case $1 in
+    0) echo "Internal error.";;
+    1) echo "Cannot find files that contain relative information.";;
+    2) echo "No operation has been execuated.";;
+    3) echo ".cif files don't exist!!!";;
+    4) echo "There isn't the zlauncher in $PWD.";;
+  esac
+}
+
+function getName(){
+  #get the name of this job from .cif, script or INCAR files
+  if [ -f *.cif ]; then
+    JOB_NAME=`sed -n '1s/data_\(\S*\)/\1/p' *.cif`
+  elif [ -f zlauncher ]; then
+    JOB_NAME=`grep "[Nn][Aa][Mm][Ee]=" zlauncher | sed "s/ //g" | awk -F '=' '{print $2}' | awk -F '#' '{print $1}'` #need to change if job scripts are different
+  elif [ -f INCAR ]; then
+    JOB_NAME=`grep [Ss][Yy][Ss][Tt][Ee][Mm] INCAR | grep "=" | sed "s/ //g" | awk -F '=' '{print $2}' | awk -F '#' '{print $1}'` #need to change if job scripts are different
+  else
+    errorText 1
+  fi
+}
+
+function getPBC(){
+  #get the periodic boundary conditions or Lattice constance from .cif or OUTCAR
+  if [ -f *.cif ]; then
+    PBC=(`sed -n '10,15p' *.cif|awk '{printf " %s", $2}'`)
+  elif [ -f OUTCAR ]; then
+    echo HEHE
+  fi
+}
+
+function getAtomNum(){
+  if [ -f *.cif ]; then                 #get number of ions from .cif
+    atom_num=$(grep U[ia][sn][oi] *.cif | wc -l)
+    atom_num_plus_1=$(($atom_num+1))
+    atom_num_plus_2=$(($atom_num+2))
+    atom_num_minus_1=$(($atom_num-1))
+    atom_num_minus_2=$(($atom_num-2))
+  elif [ -f OUTCAR ]; then                 #get number of ions from OUTCAR
+    atom_num=$(sed -n "s/[^\n]*NIONS = *//p" OUTCAR)
+    atom_num_plus_1=$(($atom_num+1))
+    atom_num_plus_2=$(($atom_num+2))
+    atom_num_minus_1=$(($atom_num-1))
+    atom_num_minus_2=$(($atom_num-2))
+  else
+    errorText 1
+  fi
+}
+
+function getDate(){
+  DATE=`date +-%Y-%m-%d-%H%M`
+}
+
+function getStep(){
+  Step=$(grep F OSZICAR | tail -1 | awk '{print $1}')
+}
 
 
 #initializtion
-
-JOB_NAME=`sed -n '1s/data_\(\S*\)/\1/p' *.cif`
+#JOB_NAME=`sed -n '1s/data_\(\S*\)/\1/p' *.cif`
 execFlag=1
-DATE=`date +-%Y-%m-%d-%H%M`
 fixLimit=-99                            # a relative infinitesimal var
-if [ -f OUTCAR ]; then                 #get number of ions from OUTCAR
-  atom_num=$(sed -n "s/[^\n]*NIONS = *//p" OUTCAR)
-  atom_num_plus_1=$(($atom_num+1))
-  atom_num_plus_2=$(($atom_num+2))
-  atom_num_minus_1=$(($atom_num-1))
-  atom_num_minus_2=$(($atom_num-2))
-fi
-
 
 #take arguments
 
-while getopts :hIjrxc:f:i:p:u:b: flags
+while getopts :hIjrtxc:f:i:p:u:b: flags
 do
   case $flags in
 
@@ -70,6 +121,7 @@ do
         [Bb][Ss][Kk][Aa][Nn]*)echo "take a bSKAN calcuation";execFlag=6;;
       esac;;
     j)execFlag=23;;
+    t)execFlag=25;;
     r)execFlag=24;;
     p)potDir=`grep -m 1 $OPTARG ~/res/potDir`;;
     x)execFlag=11;;
@@ -88,24 +140,26 @@ done
 
 case $execFlag in
 
-
   #0 for non-vaspfiles operation
-  0)echo "no operation has been execuated"
+  0)
+    errorText 2
     ;;
-
 
   #1 to generate vasp input files
   1)
     if [ -f *.cif ] ;then
       dos2unix *.cif
     else
-      echo ".cif files don't exist!!!"
+      errorText 3
       exit
     fi
 
     #generate POSCAR from .cif file
+    getName
+    getPBC
+
     echo $JOB_NAME > POSCAR
-    sed -n '10,15p' *.cif|awk '{printf " %s", $2}'|awk '{pie=3.1415926/180; printf "%.6f\n%12.6f%12.6f%12.6f\n%12.6f%12.6f%12.6f\n%12.6f%12.6f%12.6f\n",1,$1,0,0,$2*cos(pie*$6),$2*sin(pie*$6),0,$3*cos(pie*$5),$3*(cos(pie*$4)-cos(pie*$6)*cos(pie*$5))/sin(pie*$6), $3*sqrt((cos(pie*$5-pie*$6)-cos(pie*$4))*(cos(pie*$4)-cos(pie*$5+pie*$6))/sin(pie*$6)^2)}' >> POSCAR
+    echo ${PBC[*]} | awk '{pie=3.1415926/180; printf "%.6f\n%12.6f%12.6f%12.6f\n%12.6f%12.6f%12.6f\n%12.6f%12.6f%12.6f\n",1,$1,0,0,$2*cos(pie*$6),$2*sin(pie*$6),0,$3*cos(pie*$5),$3*(cos(pie*$4)-cos(pie*$6)*cos(pie*$5))/sin(pie*$6), $3*sqrt((cos(pie*$5-pie*$6)-cos(pie*$4))*(cos(pie*$4)-cos(pie*$5+pie*$6))/sin(pie*$6)^2)}' >> POSCAR
     grep U[ia][sn][oi] *.cif|awk '{printf "%s\n",$2}'|sort|uniq -c|awk '{printf "%6s",$2}' >> POSCAR
     echo >> POSCAR
     grep U[ia][sn][oi] *.cif|awk '{printf "%s\n",$2}'|sort|uniq -c|awk '{printf "%6s",$1}' >> POSCAR
@@ -130,12 +184,14 @@ case $execFlag in
     if [ $ldapuFlag ] ;then #LDA+U
       echo $ldapuvalue | awk -F '*' '{a[$1]=a[$2]=a[$3]=a[$4]=a[$5]=a[$6]=a[$7]=a[$8]=a[$9]=a[$10]=2;b[$1]=b[$2]=b[$3]=b[$4]=b[$5]=b[$6]=b[$7]=b[$8]=b[$9]=b[$10]=0.5;b[0]=0;a[0]=-1;b[$20]=a[$20]=" ";printf "\nLDAU=.TRUE.\nLDAUTYPE=2\nLDAUL=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\nLDAUU=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\nLDAUJ=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\n",a[$1],a[$2],a[$3],a[$4],a[$5],a[$6],a[$7],a[$8],a[$9],a[$10],$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,b[$1],b[$2],b[$3],b[$4],b[$5],b[$6],b[$7],b[$8],b[$9],b[$10]}' >> INCAR
     fi
-    sed "s/JOB_NAME/$JOB_NAME/" ~/res/$vaspScript > zlauncher
+    sed "s/JOB_NAME/$JOB_NAME/" ~/res/$VaspScript > zlauncher
     printf "\033[31mDON'T FORGET \033[34mINCAR, KPOINTS, CORES\033[0m\n"
     ;;
 
   #2 to create dos directory
-  2)if [ -d dos ] ;then
+  2)
+    getDate
+    if [ -d dos ] ;then
       mv dos dos.backup$DATE
     fi
     mkdir dos
@@ -147,7 +203,9 @@ case $execFlag in
 
 
   #3 to create stm directory
-  3)if [ -d stm ] ;then
+  3)
+    getDate
+    if [ -d stm ] ;then
       mv stm stm.backup$DATE
     fi
     mkdir stm
@@ -159,7 +217,9 @@ case $execFlag in
 
 
   #4 to create static calculation directory
-  4)if [ -d sc ] ;then
+  4)
+    getDate
+    if [ -d sc ] ;then
       mv sc sc.backup$DATE
     fi
     mkdir sc
@@ -170,7 +230,10 @@ case $execFlag in
     ;;
 
   #5 for bSKAN input files calculation
-  5)if [ -d stm_bskan ] ;then
+  5)
+    getDate
+    getAtomNum
+    if [ -d stm_bskan ] ;then
       mv stm_bskan stm_bskan.backup$DATE
     fi
     mkdir stm_bskan
@@ -187,7 +250,9 @@ case $execFlag in
     ;;
 
   #6 for bSKAN calcultion
-  6)if [ -d bskan ]; then
+  6)
+    getDate
+    if [ -d bskan ]; then
       mv bskan bskan.backup$DATE
     fi
     mkdir bskan
@@ -195,109 +260,124 @@ case $execFlag in
     ln -sf ../CONTCAR bskan/ASAMPLE
     ln -sf ~/res/WAVTIP bskan/WAVTIP
     ln -sf ~/res/ATIP bskan/ATIP
-    cp ~/res/PROCARtip ~/res/INSCAN ~/res/zlauncher bskan/
+    cp ~/res/PROCARtip ~/res/INSCAN ~/res/$VaspScript bskan/
     sed -i 's/vasp/bskan_chen/' bskan/zlauncher
     ;;
 
   #11 to generate .xyz from OUT.ANI
-  11)atom_nums=`head -1 OUT.ANI|sed 's/ *//g'`
-     tail_nums=`expr $atom_nums + 2`
-     tail -$tail_nums OUT.ANI|sed '2s/[^~]*//' > $JOBNAME.xyz
-     ;;
+  11)
+    getName
+    getAtomNum
+    tail -$atom_num_plus_2 OUT.ANI|sed '2s/[^~]*//' > $JOB_NAME.xyz
+    ;;
 
 
   #21 to check jobs based on names of directory, only for $HOME/LOG existing
-  21)grep $dirName $HOME/LOG |tail
-     ;;
+  21)
+    grep $dirName $HOME/LOG | tail
+    ;;
 
 
   #22 to initialize the incar file
-  22)if [ -d $HOME/res ] ;then
-       if [ -f $HOME/res/incar ] ;then
-          rm -r $HOME/res/incar
-       fi
-     else
-       cd $HOME
-       mkdir res
-     fi
-     printf "SYSTEM=JOB_NAME\nISPIN=2\nISIF=2\n\nLCHARG=.FALSE. # for .TRUE.\nLWAVE=.FALSE. # for .TRUE.\n#LVDW=.TRUE.\nLREAL=A\nENCUT=400\n\nISTART=0\nIBRION=2\nPOTIM=0.4\nNSW=1000\n#PREC=Accurate\nALGO=Fast\nEDIFFG=-0.05\nISMEAR=0 ; SIGMA=0.05 #-5 for accurate total energy and DOS, 0 for large cell, 1 for metal\nVOSKOWN=0 #0 for PBE, 1 for PW91\nNELM=100\nNSIM=4\nISYM=0\n\nNPAR=4\n#MAGMOM\n\n" > $HOME/res/incar
-     ;;
+  22)
+    if [ -d $HOME/res ] ;then
+      if [ -f $HOME/res/incar ] ;then
+        rm -r $HOME/res/incar
+      fi
+    else
+      cd $HOME
+      mkdir res
+    fi
+    printf "SYSTEM=JOB_NAME\nISPIN=2\nISIF=2\n\nLCHARG=.FALSE. # for .TRUE.\nLWAVE=.FALSE. # for .TRUE.\n#LVDW=.TRUE.\nLREAL=A\nENCUT=400\n\nISTART=0\nIBRION=2\nPOTIM=0.4\nNSW=1000\n#PREC=Accurate\nALGO=Fast\nEDIFFG=-0.05\nISMEAR=0 ; SIGMA=0.05 #-5 for accurate total energy and DOS, 0 for large cell, 1 for metal\nVOSKOWN=0 #0 for PBE, 1 for PW91\nNELM=100\nNSIM=4\nISYM=0\n\nNPAR=4\n#MAGMOM\n\n" > $HOME/res/incar
+    ;;
 
 
   #23 to submiting jobs. type your submit jobs commands replacing "sh zlauncher"
-  23)for i in $(ls -p|grep "/"|grep -v backup)
-       do cd $i
-       if [ -f zlauncher ] ;then
-         sh zlauncher
-       else
-         echo "there isn't the zlauncher in $PWD "
-       fi
-       cd ..
-     done
-     ;;
+  23)
+    for i in $(ls -p|grep "/"|grep -v backup)
+      do cd $i
+        if [ -f zlauncher ] ;then
+          sh zlauncher
+        else
+          errorText 4
+        fi
+        cd ..
+      done
+    ;;
 
 
   #24 to remove useless files
-  24)rm -f CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66
-     ;;
+  24)
+    rm -f CHG DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66
+    ;;
 
+  #25 to generate .arc trajectory file from OUT.ANI
+  25)
+    getName
+    getPBC
+    getAtomNum
+    getStep
+    tail -$(($atom_num_plus_2*$Step)) OUT.ANI | awk -v a=${PBC[0]} -v b=${PBC[1]} -v c=${PBC[2]} -v alpha=${PBC[3]} -v beta=${PBC[4]} -v gamma=${PBC[5]} 'BEGIN{printf "!BIOSYM archive 3\nPBC=ON\n"} NF>2{if($1=="STEP") printf "end\nend\n\n!DATE\nPBC%10.4f%10.4f%10.4f%10.4f%10.4f%10.4f (P 1)\n",a,b,c,alpha,beta,gamma;else printf "%-5s%15.9f%15.9f%15.9f%23s\n",$1,$2,$3,$4,$1}END{printf "end\nend\n"}' | sed '3,4d' > $JOB_NAME.arc
+    ;;
 
   #50 to transfer PLOTCON to corresponding martrix
-  50)  awk '{if ( NF == 0  ) printf "\n";else if ( NF == 3 ) printf "%s ",$3}' PLOTCON > m_$JOBNAME
-     ;;
+  50)
+    getName
+    awk '{if ( NF == 0  ) printf "\n";else if ( NF == 3 ) printf "%s ",$3}' PLOTCON > m_$JOB_NAME
+    ;;
 
 
   #51 to transfer PROCAR of vasp to PROCARtip of bSKAN
   51)
-  if [ -f PROCARtip ]; then
-     rm -f PROCARtip
-  fi
+    if [ -f PROCARtip ]; then
+      rm -f PROCARtip
+    fi
 
-  File='PROCAR'
+    getAtomNum
+    File='PROCAR'
 
-  nspin=$(grep ISPIN INCAR | sed 's/ //g' | sed 's/[^0-9]//g')
-  nkpts=$(sed -n '2s/:/#/pg' $File | awk  '{print $4}')
-  nbands=$(sed -n '2s/:/#/pg' $File | awk  '{print $8}')
+    nspin=$(grep ISPIN INCAR | sed 's/ //g' | sed 's/[^0-9]//g')
+    nkpts=$(sed -n '2s/:/#/pg' $File | awk  '{print $4}')
+    nbands=$(sed -n '2s/:/#/pg' $File | awk  '{print $8}')
 #  nions=$(sed -n '2s/:/#/pg' $File | awk  '{print $12}')
-  grep -w k-point $File | awk '{print $1,$2,$4,$5,$6,$9}' > _kpo.pro
-  grep -w band $File | awk '{print $3,$2,$5,$8}' > _band.pro
-  grep -w $atom_num $File | grep -v band > _ion.pro
-  i=1
-  j=1
-  k=1
+    grep -w k-point $File | awk '{print $1,$2,$4,$5,$6,$9}' > _kpo.pro
+    grep -w band $File | awk '{print $3,$2,$5,$8}' > _band.pro
+    grep -w $atom_num $File | grep -v band > _ion.pro
+    i=1
+    j=1
+    k=1
 
-  while [ $i -le $nspin ] ; do
-     i=$(($i+1))
-     while [ $j -le $nkpts ] ; do
+    while [ $i -le $nspin ] ; do
+      i=$(($i+1))
+      while [ $j -le $nkpts ] ; do
         j=$(($j+1))
-        echo >> PROCARtip.pro
+          echo >> PROCARtip.pro
         sed -n '1p' _kpo.pro >> PROCARtip.pro
         sed -i '1d' _kpo.pro
         while [ $k -le $nbands ] ; do
-           k=$(($k+1))
-           echo >> PROCARtip.pro
-           sed -n '1p' _band.pro >> PROCARtip.pro
-           sed -i '1d' _band.pro
-           echo >> PROCARtip.pro
-           echo "ion      s     py     pz     px    dxy    dyz    dz2    dxz    dx2    tot" >> PROCARtip.pro
-           sed -n '1,3p' _ion.pro >> PROCARtip.pro
-           sed -i '1,3d' _ion.pro
+          k=$(($k+1))
+          echo >> PROCARtip.pro
+          sed -n '1p' _band.pro >> PROCARtip.pro
+          sed -i '1d' _band.pro
+          echo >> PROCARtip.pro
+          echo "ion      s     py     pz     px    dxy    dyz    dz2    dxz    dx2    tot" >> PROCARtip.pro
+          sed -n '1,3p' _ion.pro >> PROCARtip.pro
+          sed -i '1,3d' _ion.pro
         done
         k=1
-     done
-     j=1
-  done
+      done
+      j=1
+    done
 
-  echo > PROCARtip
-  echo $nkpts $nbands $nspin >> PROCARtip
-  awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' PROCARtip.pro >> PROCARtip
-  rm -f PROCARtip.pro _ion.pro _band.pro _kpo.pro
-     ;;
-
-
+    echo > PROCARtip
+    echo $nkpts $nbands $nspin >> PROCARtip
+    awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' PROCARtip.pro >> PROCARtip
+    rm -f PROCARtip.pro _ion.pro _band.pro _kpo.pro
+    ;;
 
   #99 for manual
-  99) cat <<EOF
+  99)
+    cat | less <<EOF
 
 
 
@@ -322,7 +402,7 @@ case $execFlag in
     po is a script that can automatically generate the inputfiles for VASP from a .cif file
 
     po -h -I -x -u -r
-       -f [num] -p [pot]  -c [name] -i [dos] [stm] [sc]
+       -f [num] -p [pot] -c [name] -i [dos] [stm] [sc]
 
     DEFAULT
 
@@ -330,37 +410,42 @@ case $execFlag in
 
     !!CAUTION!!
 
-    there must be incar, KPOINTS, vasp.script, potDir(with potcar directory in it, take /home/apps/pot/paw_pbe2010 for example) in the $HOME/res, or "po" can just generate POSCAR.
+    there must be incar, KPOINTS, vasp.script, potDir(with potcar directory in it, take /home/apps/pot/paw_pbe2010 for example) in the $HOME/res, otherwise "po" can just generate POSCAR.
 
     INTRODUCTION
+
+    -b [p2m], [pro] --bskan [operations], take bskan operations such as plotcon to matrix, procar to procartip
+
+    -c [name], --checkjob [directory name], to check your recently finished jobs if the LOG file exists in the $HOME/
+
+    -f [num] --fix [coordinates number], to fix the atoms under the coordinates number.
 
     -h --help, to print out the manual
 
     -I --INCAR initialization, to reset INCAR in $HOME/res
 
-    -i [dos], [stm], [sc] --INCAR selection [calculation type], to generate different kinds of INCAR file
+    -i [dos], [stm], [sc], [bstm], [bskan] --INCAR selection [calculation type], to generate different kinds of INCAR file
 
     -j --submit jobs, to submit jobs in the sub-directories
 
-    -c [name], --checkjob [directory name], to check your recently finished jobs if the LOG file exists in the $HOME/
+    -p [pot] --potcar [POTCAR type], to choose which POTCAR will be used in the calculation in the future. make sure the directory of which one you choose exists in the $HOME/res/potDir
 
-    -x --xyz, to generate .xyz file from the OUT.ANI
+    -r --remove, to remove useless files like CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66, and it won't generate files.
+
+    -t --trajectory, to generate .arc file which can be read by Material Studios to show the trajectory.
 
     -u [num*num*...], --LDA+U [U value], plus U value by "0*1*2*3*4..." based on the alphybet sequence of elements, the default J value is 0.5, the member of U values is at most 10.
 
-    -r --remove, to remove useless files like CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66, and it won't generate files.
-
-    -f [num] --fix [coordinates number], to fix the atoms under the coordinates number.
-
-    -p [pot] --potcar [POTCAR type], to choose which POTCAR will be used in the calculation in the future. make sure the directory of which one you choose exists in the $HOME/res/potDir
+    -x --xyz, to generate .xyz file from the OUT.ANI
 
 
 EOF
-  ;;
+    ;;
 
 
   #it isn't possible to go here~
-  ?)echo "internal error"
+  ?)
+    errorText 0
     ;;
 
 esac

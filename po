@@ -99,7 +99,7 @@ fixLimit=-99                            # a relative infinitesimal var
 
 #take arguments
 
-while getopts :hIjrtxc:f:i:p:u:b: flags
+while getopts :hIjrxc:f:i:p:u:b: flags
 do
   case $flags in
 
@@ -121,7 +121,6 @@ do
         [Bb][Ss][Kk][Aa][Nn]*)echo "take a bSKAN calcuation";execFlag=6;;
       esac;;
     j)execFlag=23;;
-    t)execFlag=25;;
     r)execFlag=24;;
     p)potDir=`grep -m 1 $OPTARG ~/res/potDir`;;
     x)execFlag=11;;
@@ -268,13 +267,18 @@ case $execFlag in
   11)
     getName
     getAtomNum
+    getPBC
+    getStep
     tail -$atom_num_plus_2 OUT.ANI|sed '2s/[^~]*//' > $JOB_NAME.xyz
+    tail -$(($atom_num_plus_2*$Step)) OUT.ANI | awk -v a=${PBC[0]} -v b=${PBC[1]} -v c=${PBC[2]} -v alpha=${PBC[3]} -v beta=${PBC[4]} -v gamma=${PBC[5]} 'BEGIN{printf "!BIOSYM archive 3\nPBC=ON\n"} NF>2{if($1=="STEP") printf "end\nend\n\n!DATE\nPBC%10.4f%10.4f%10.4f%10.4f%10.4f%10.4f (P 1)\n",a,b,c,alpha,beta,gamma;else printf "%-5s%15.9f%15.9f%15.9f%23s\n",$1,$2,$3,$4,$1}END{printf "end\nend\n"}' | sed '3,4d' > $JOB_NAME.arc
+    head -5 $JOB_NAME.arc > $JOB_NAME.car
+    tail -$(($atom_num_plus_2)) $JOB_NAME.arc >> $JOB_NAME.car
     ;;
 
 
   #21 to check jobs based on names of directory, only for $HOME/LOG existing
   21)
-    grep $dirName $HOME/LOG | tail
+    grep $dirName $HOME/LOG | tail -20
     ;;
 
 
@@ -309,15 +313,6 @@ case $execFlag in
   #24 to remove useless files
   24)
     rm -f CHG DOSCAR EIGENVAL IBZKPT energy  PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66
-    ;;
-
-  #25 to generate .arc trajectory file from OUT.ANI
-  25)
-    getName
-    getPBC
-    getAtomNum
-    getStep
-    tail -$(($atom_num_plus_2*$Step)) OUT.ANI | awk -v a=${PBC[0]} -v b=${PBC[1]} -v c=${PBC[2]} -v alpha=${PBC[3]} -v beta=${PBC[4]} -v gamma=${PBC[5]} 'BEGIN{printf "!BIOSYM archive 3\nPBC=ON\n"} NF>2{if($1=="STEP") printf "end\nend\n\n!DATE\nPBC%10.4f%10.4f%10.4f%10.4f%10.4f%10.4f (P 1)\n",a,b,c,alpha,beta,gamma;else printf "%-5s%15.9f%15.9f%15.9f%23s\n",$1,$2,$3,$4,$1}END{printf "end\nend\n"}' | sed '3,4d' > $JOB_NAME.arc
     ;;
 
   #50 to transfer PLOTCON to corresponding martrix
@@ -432,11 +427,9 @@ case $execFlag in
 
     -r --remove, to remove useless files like CHG CHGCAR DOSCAR EIGENVAL IBZKPT energy PCDAT vasprun.xml WAVECAR XDATCAR mpd.hosts errfile outfile REPORT fort.66, and it won't generate files.
 
-    -t --trajectory, to generate .arc file which can be read by Material Studios to show the trajectory.
-
     -u [num*num*...], --LDA+U [U value], plus U value by "0*1*2*3*4..." based on the alphybet sequence of elements, the default J value is 0.5, the member of U values is at most 10.
 
-    -x --xyz, to generate .xyz file from the OUT.ANI
+    -x --xyz, to generate .xyz, .car, .arc file from the OUT.ANI
 
 
 EOF

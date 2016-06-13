@@ -399,15 +399,15 @@ case $execFlag in
     po -h -I -x -u -r
        -f [num] -p [pot] -c [name] -i [dos] [stm] [sc]
 
-    DEFAULT
+  DEFAULT
 
     the default set is to generate the inputfiles with a relax calculation, and all atoms unfixed. the PBE2010 potcar is also used.
 
-    !!CAUTION!!
+  !!CAUTION!!
 
     there must be incar, KPOINTS, vasp.script, potDir(with potcar directory in it, take /home/apps/pot/paw_pbe2010 for example) in the $HOME/res, otherwise "po" can just generate POSCAR.
 
-    INTRODUCTION
+  INTRODUCTION
 
     -b [p2m], [pro] --bskan [operations], take bskan operations such as plotcon to matrix, procar to procartip
 
@@ -430,6 +430,8 @@ case $execFlag in
     -u [num*num*...], --LDA+U [U value], plus U value by "0*1*2*3*4..." based on the alphybet sequence of elements, the default J value is 0.5, the member of U values is at most 10.
 
     -x --xyz, to generate .xyz, .car, .arc file from the OUT.ANI
+
+  By aVrise, github/aVrise/po
 
 
 EOF

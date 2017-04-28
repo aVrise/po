@@ -1,3 +1,5 @@
+#/usr/bin/env python
+
 ca = open("./OUTCAR", "r").readlines()
 ca = [[x for x in y.strip().split() if x != ''] for y in ca]
 

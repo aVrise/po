@@ -2,10 +2,10 @@
 
 #set default
 
-potDir=`grep -m 1 PBE2010 ~/jyliu/res/potDir`
+potDir=`grep -m 1 PBE ~/res/potDir`
 VaspScript="qsub.sh"
 periodicTable=(H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt)
-orbitalProperty=(s z	s	s	p	p	p	p	p	z	s	s	p	p	p	p	p	z	s	s	d	d	d	d	d	d	d	d	d	d	p	p	p	p	p	z	s	s	d	d	d	d	d	d	d	d	d	d	p	p	p	p	p	z	s	s	d	f	f	f	f	f	f	f	f	f	f	f	f	f	d	d	d	d	d	d	d	d	d	d	p	p	p	p	p	z	s	d	d	f	f	f	f	f	f	f	f	f	f	f	f	f	d	d	d	d	d	d	d)
+orbitalPropery=(s	z	s	s	p	p	p	p	p	z	s	s	p	p	p	p	p	z	s	s	d	d	d	d	d	d	d	d	d	d	p	p	p	p	p	z	s	s	d	d	d	d	d	d	d	d	d	d	p	p	p	p	p	z	s	s	d	f	f	f	f	f	f	f	f	f	f	f	f	f	d	d	d	d	d	d	d	d	d	d	p	p	p	p	p	z	s	d	d	f	f	f	f	f	f	f	f	f	f	f	f	f	d	d	d	d	d	d	d)
 
 #functions
 function putIncar(){
@@ -175,38 +175,18 @@ function getPBC(){
 
 function getANum(){
   an=0
-  while [ $an -lt ${#periodicTable[*]} ] ; do
-    if [ ${periodicTable[$an]} = $j ]; then 
+  while an<${#periodicTable[*]}; do
+    ((an++))
+    if [ periodicTable[$an] -eq $j ]; then 
       break
     fi
-    ((an++))
-  done
-}
-
-function returnOrbitals(){
-  ttt=$((an))
-  if [ ${orbitalProperty[$ttt]} = "s" ] ; then
-    tt=-1
-  else  if [ ${orbitalProperty[$ttt]} = "p" ] ; then
-    tt=-1
-        else  if [ ${orbitalProperty[$ttt]} = "d" ] ; then
-    tt=2
-              else  if [ ${orbitalProperty[$ttt]} = "f" ] ; then
-    tt=3
-                    else
-    tt=-1
-                    fi
-              fi
-        fi
-  fi
 }
 
 function getUps(){
   ups=()
   for j in $(cat POSCAR | awk 'NR==6{for (i=1;i<=NF;i++) {printf "%6s", $i} printf "\n"}'); do
     getANum
-    returnOrbitals
-    ups=(${ups[*]} $tt)
+    ups=(${ups[*]} $an)
   done
 }
 
@@ -259,9 +239,9 @@ function inputPo(){
 
   makeIncar
   awk 'NR==5' $1 | xargs po
-  cp ~/jyliu/res/kpoints ./KPOINTS
+  cp ~/res/kpoints ./KPOINTS
   awk 'NR==7{printf "%s %s %s\n%s %s %s\n",$1,$2,$3,$4,$5,$6}' $1 >> KPOINTS
-  sed "s/JOB_NAME/$JOB_NAME/" ~/jyliu/res/qsub.sh > zlauncher
+  sed "s/JOB_NAME/$JOB_NAME/" ~/res/qsub.sh > zlauncher
   for i in $(awk 'NR==3{print $0}' $1) ; do
     sed -i "/###/i$i" zlauncher
   done
@@ -283,9 +263,9 @@ if [ $1 = "input.vasp" ] ; then
 
   makeIncar
   awk 'NR==5' $1 | xargs po
-  cp ~/jyliu/res/kpoints ./KPOINTS
+  cp ~/res/kpoints ./KPOINTS
   awk 'NR==7{printf "%s %s %s\n%s %s %s\n",$1,$2,$3,$4,$5,$6}' $1 >> KPOINTS
-  sed "s/JOB_NAME/$JOB_NAME/" ~/jyliu/res/qsub.sh > zlauncher
+  sed "s/JOB_NAME/$JOB_NAME/" ~/res/qsub.sh > zlauncher
   for i in $(awk 'NR==3{print $0}' $1) ; do
     sed -i "/###/i$i" zlauncher
   done
@@ -344,7 +324,7 @@ do
       esac;;
     j)execFlag=23;;
     r)execFlag=24;;
-    p)potDir=`grep -m 1 $OPTARG ~/jyliu/res/potDir`;;
+    p)potDir=`grep -m 1 $OPTARG ~/res/potDir`;;
     x)execFlag=11;;
     u)ldapuFlag=1
       ldapuvalue=$OPTARG;;
@@ -403,15 +383,14 @@ case $execFlag in
     #
     cp ~/res/KPOINTS KPOINTS
     if [ ! -f INCAR ] ;then
-      sed "s/JOB_NAME/$JOB_NAME/" ~/jyliu/res/incar > INCAR
+      sed "s/JOB_NAME/$JOB_NAME/" ~/res/incar > INCAR
     fi
     if [ $ldapuFlag ] ;then #LDA+U
       # echo $ldapuvalue | awk -F '*' '{a[$1]=a[$2]=a[$3]=a[$4]=a[$5]=a[$6]=a[$7]=a[$8]=a[$9]=a[$10]=2;b[$1]=b[$2]=b[$3]=b[$4]=b[$5]=b[$6]=b[$7]=b[$8]=b[$9]=b[$10]=0.5;b[0]=0;a[0]=-1;b[$20]=a[$20]=" ";printf "\nLDAU=.TRUE.\nLDAUTYPE=2\nLDAUL=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\nLDAUU=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\nLDAUJ=%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\n",a[$1],a[$2],a[$3],a[$4],a[$5],a[$6],a[$7],a[$8],a[$9],a[$10],$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,b[$1],b[$2],b[$3],b[$4],b[$5],b[$6],b[$7],b[$8],b[$9],b[$10]}' >> INCAR
       # ups=(-1 2 3)
-      getUps
       echo $ldapuvalue | awk -F '*' -v ups="${ups[*]}" '{split(ups,up," ") ; for (i=1;i<=NF;i++) {u[i]=$i;j[i]=0;}}END{printf "\nLDAU=.TRUE.\nLDAUTYPE=2\nLDAUL=";  for (i=1;i<=NF;i++) {printf "%6s", up[i]} ; printf "\nLDAUU="; for (i=1;i<=NF;i++) {printf "%6.1f", u[i]} printf "\nLDAUJ="; for (i=1;i<=NF;i++) {printf "%6.1f", j[i]} ; printf "\n"}' >> INCAR
     fi
-    sed "s/JOB_NAME/$JOB_NAME/" ~/jyliu/res/$VaspScript > zlauncher
+    sed "s/JOB_NAME/$JOB_NAME/" ~/res/$VaspScript > zlauncher
     printf "\033[31mDON'T FORGET \033[34mINCAR, KPOINTS, CORES\033[0m\n"
     ;;
 

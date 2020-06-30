@@ -58,7 +58,7 @@ function makeIncar(){
   #putIncar IWAVPR 11
   putIncar ISYM 0
   #putIncar LCORR T
-  putIncar POTIM 0.4
+  putIncar POTIM 0.5
   #putIncar TEIN 0.0
   #putIncar TEBEG 0.0
   #putIncar TEEND 0.0
@@ -88,11 +88,12 @@ function makeIncar(){
   #putIncar NREBOOT 0
   #putIncar NMIN 0
   #putIncar EREF 0.00
-  #putIncar IMIX 4
-  #putIncar BMIX 1.00
-  #putIncar AMIX_MAG 1.60
-  #putIncar BMIX_MAG 1.00
-  #putIncar AMIN 0.10
+  putIncar IMIX 4
+  putIncar AMIX 0.40
+  putIncar BMIX 1.00
+  putIncar AMIX_MAG 1.60
+  putIncar BMIX_MAG 1.00
+  putIncar AMIN 0.10
   #putIncar WC 100.
   #putIncar INIMIX 1
   #putIncar MIXPRE 1
@@ -266,7 +267,7 @@ function inputPo(){
     sed -i "/###/i$i" zlauncher
   done
   putMethod
-  #qsub zlauncher
+  # qsub zlauncher
   
 }
 
